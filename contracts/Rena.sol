@@ -11,10 +11,6 @@ import './dependencies/uniswap-v2-periphery/contracts/interfaces/IUniswapV2Route
 import './interfaces/IRebalancer.sol';
 import './interfaces/ILPStaking.sol';
 
-//TODO: Get Renaswap Interface for grabbing factory, and pair
-//This exists outside of the Rena ERC20 Contract because Uniswap will
-//not allow you to do a swap() when to == token1 or token2.
-
 contract Rena is ERC20("Rena", "RENA"), Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
