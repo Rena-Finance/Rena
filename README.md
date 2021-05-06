@@ -1,5 +1,7 @@
-# renaswap-backend
+# Rena
 Regroups all the contracts required for a full scale deployment of the backend
+
+Public Release
 
 # install
 yarn install
