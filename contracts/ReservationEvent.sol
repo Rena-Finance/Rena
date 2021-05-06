@@ -95,7 +95,7 @@ contract ReservationEvent is ReentrancyGuard, Ownable {
         require(block.timestamp > endTime, "The Reservation Event has not concluded yet.");
         require(liquidityGenerated == false, "Already done.");
         liquidityGenerated = true;
-        uint256 amount = 37500*1e18;
+        uint256 amount = 3750000*1e18;
         uint256 treasuryCut = address(this).balance.div(10).mul(3);
         //10% of the 30% for On Going Dev.
         rena.treasury().transfer(treasuryCut.div(10));
