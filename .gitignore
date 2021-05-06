@@ -1,0 +1,15 @@
+#VSCode
+workspace.code-workspace
+
+# Mode.JS
+node_modules
+*/build/
+#Hardhat files
+artifacts/
+cache/
+typechain/
+coverage/
+
+# yarn
+*.lock
+yarn-error.log

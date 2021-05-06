@@ -1,0 +1,6 @@
+[submodule "contracts/dependencies/uniswap-v2-core"]
+	path = contracts/dependencies/uniswap-v2-core
+	url = git@github.com:Mimir-Solutions/uniswap-v2-core.git
+[submodule "contracts/dependencies/uniswap-lib"]
+	path = contracts/dependencies/uniswap-lib
+	url = git@github.com:Mimir-Solutions/uniswap-lib.git

@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "@maticnetwork/maticjs": "^2.0.38",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^3.4.1",
+    "@typechain/ethers-v5": "^6.0.2",
+    "@types/chai": "^4.2.15",
+    "@types/mocha": "^8.2.1",
+    "@types/node": "^14.14.32",
+    "chai": "^4.3.3",
+    "ethereum-waffle": "^3.3.0",
+    "ethers": "^5.0.32",
+    "hardhat": "^2.1.1",
+    "hardhat-deploy": "^0.7.0-beta.47",
+    "hardhat-typechain": "^0.3.5",
+    "mocca": "^1.0.3",
+    "solidity-coverage": "^0.7.16",
+    "ts-generator": "^0.1.1",
+    "ts-node": "^9.1.1",
+    "typechain": "^4.0.1",
+    "typescript": "^4.2.3"
+  },
+  "scripts": {
+    "test": "npx hardhat test",
+    "build": "npx hardhat compile",
+    "deploy": "npx hardhat run deployment/full_deployment.ts",
+    "coverage": "npx hardhat coverage"
+  }
+}

@@ -1,0 +1,175 @@
+import { deployments, ethers } from "hardhat";
+import chai from "chai";
+import { solidity } from "ethereum-waffle";
+
+import { RenaswapV1Factory } from "../typechain/RenaswapV1Factory";
+import { RenaswapV1Wrapper } from "../typechain/RenaswapV1Wrapper";
+import { RenaswapV1Router } from "../typechain/RenaswapV1Router";
+
+import { FeeDistributor } from "../typechain/FeeDistributor";
+import { LPStaking } from "../typechain/LPStaking";
+import { Rebalancer } from "../typechain/Rebalancer";
+import { ReservationEvent } from "../typechain/ReservationEvent";
+import { Claim } from "../typechain/Claim";
+
+import { UniswapV2Pair } from "../typechain/UniswapV2Pair";
+import { UniswapV2Factory } from "../typechain/UniswapV2Factory";
+import { UniswapV2Router02 } from "../typechain/UniswapV2Router02";
+
+
+
+import { WETH9 } from "../typechain/WETH9";
+import { FakeERC20 } from "../typechain/FakeERC20";
+import { Rena } from "../typechain/Rena";
+import { BigNumber } from "ethers";
+
+
+
+chai.use(solidity);
+
+const { deploy } = deployments;
+const { expect } = chai;
+
+const zeroAddress = "0x0000000000000000000000000000000000000000";
+
+describe("Integration tests with uniswap", () => {
+  let factory : RenaswapV1Factory;
+  let uniFactory: UniswapV2Factory;
+  
+  let pair : UniswapV2Pair;
+  let owner : string;
+  let its : FakeERC20;
+  let rena : Rena;
+  let weth: WETH9;
+
+  let wrapper : RenaswapV1Wrapper;
+  let router : RenaswapV1Router;
+  let uniRouter: UniswapV2Router02;
+
+  let feeDistributor: FeeDistributor;
+  let rebalancer: Rebalancer;
+  let lpStaking: LPStaking;
+  let reservationEvent: ReservationEvent;
+  let claim: Claim;
+
+  let initContracts = async function() {
+    const signers = await ethers.getSigners();
+    owner = await signers[0].getAddress();
+
+    const erc20Factory = await ethers.getContractFactory("FakeERC20", signers[0]);
+    const wethFactory = await ethers.getContractFactory("WETH9", signers[0]);
+    const renaFactory = await ethers.getContractFactory("Rena", signers[0]);
+    its = (await erc20Factory.deploy()) as FakeERC20;
+    await its.deployed();
+
+    const wrapperFactory = await ethers.getContractFactory("RenaswapV1Wrapper", signers[0]);
+
+    wrapper = (await wrapperFactory.deploy("")) as RenaswapV1Wrapper;
+
+    const factoryFactory = await ethers.getContractFactory("RenaswapV1Factory", signers[0]);
+    factory = (await factoryFactory.deploy(signers[0].address, wrapper.address)) as RenaswapV1Factory;
+    await factory.deployed();
+
+    const UniswapV2Library = await deploy("UniswapV2Library", {
+      from: signers[0].address
+    });
+
+
+    const uniFactoryFactory = await ethers.getContractFactory("UniswapV2Factory", signers[0]);
+    uniFactory = (await uniFactoryFactory.deploy(signers[0].address)) as UniswapV2Factory
+
+    weth = (await wethFactory.deploy()) as WETH9;
+    await weth.deployed();
+ 
+    const routerFactory = await ethers.getContractFactory("RenaswapV1Router", signers[0]);
+    router = (await routerFactory.deploy(factory.address, weth.address)) as RenaswapV1Router;
+    await router.deployed();
+
+    const uniRouterFactory = await ethers.getContractFactory("UniswapV2Router02", signers[0]);
+    uniRouter = (await uniRouterFactory.deploy(uniFactory.address, weth.address)) as UniswapV2Router02;
+    await uniRouter.deployed();
+
+    rena = (await renaFactory.deploy(router.address, router.address,0,50)) as Rena;
+    await rena.deployed();
+
+    const crew = ['0x000000000000000000000000000000000000dEaD',
+              '0x000000000000000000000000000000000000dEaD',
+              '0x000000000000000000000000000000000000dEaD',
+              '0x000000000000000000000000000000000000dEaD',
+              '0x000000000000000000000000000000000000dEaD'
+             ];
+    const reservations = [12000, 11500, 11000, 10500, 10000];
+    const startTime = 1614441413;
+    const reservationAmount = (reservations.reduce((a,b) => a+b, 0))
+
+    const FeeDistributorFactory = await ethers.getContractFactory("FeeDistributor", signers[0]);
+    feeDistributor = (await FeeDistributorFactory.deploy(rena.address, its.address)) as FeeDistributor;
+    await feeDistributor.deployed();
+    
+    const RebalancerFactory = await ethers.getContractFactory("Rebalancer", signers[0]);
+    rebalancer = (await RebalancerFactory.deploy(rena.address)) as Rebalancer;
+    await rebalancer.deployed();
+
+    const LPSTakingFactory = await ethers.getContractFactory("LPStaking", signers[0]);
+    lpStaking = (await LPSTakingFactory.deploy()) as LPStaking;
+    await lpStaking.deployed();
+    await lpStaking.initialize(rena.address);
+
+    const ReservationEventFactory = await ethers.getContractFactory("ReservationEvent", signers[0]);
+    reservationEvent = (await ReservationEventFactory.deploy(rena.address, startTime, 60*60*24, reservations, crew)) as ReservationEvent;
+    await reservationEvent.deployed();
+
+    const ClaimFactory = await ethers.getContractFactory("Claim", signers[0]);
+    claim = (await ClaimFactory.deploy(rena.address, lpStaking.address)) as Claim;
+    await claim.deployed();
+    await rena.setClaim(claim.address);
+    await rena.changeFeeDistributor(feeDistributor.address);
+    await rena.transfer(reservationEvent.address, ethers.utils.parseEther(reservationAmount.toString()));
+  }
+
+  
+  beforeEach(async () => {
+    await initContracts();
+    
+  });
+
+  describe("Renaswap router", async() => {
+    it("add rena liquidity", async () => {
+      //await initRenaItsPair();
+      await its.increaseAllowance(router.address, "1000000000000000");
+      await rena.increaseAllowance(wrapper.address, "3000000000000");
+      await router.addLiquidity(its.address, rena.address, "1000000000000000", "3000000000000", 0, 0, owner, 99999999999999);
+    });
+  })
+
+  describe("Uniswap router", async() => {
+    it("add uni liquidity", async () => {
+      //await initRenaItsPair();
+
+      await rena.increaseAllowance(uniRouter.address, "3000000000000");
+      await uniRouter.addLiquidityETH(rena.address, "3000000000000", 0, 0, owner, 99999999999999, {value:(1*1e18).toString()});
+    });
+  })
+
+    
+
+  //  describe("Renaswap trade", async() => {
+  //    beforeEach(async () => {
+  //      await initContracts();
+  //      await initRenaItsPair();
+  //    });
+
+  //    it("buy ITS with RENA", async () => {
+  //       mint rRena
+  //      await rena.increaseAllowance(wrapper.address, 5555); //send rena to wrapper
+  //      await wrapper.deposit(pair.address, 5555);
+  //      await expect(pair.swap(BigNumber.from("1000"), BigNumber.from("0"), owner, "0x")).to.emit(pair, "Swap");
+  //    });
+
+  //    it("buy RENA with ITS should fail", async () => {
+  //      await its.transfer(pair.address, 5555);
+  //      await expect(pair.swap(BigNumber.from("0"), BigNumber.from("1000"), owner, "0x")).to.be.revertedWith("UniswapV2: TRANSFER_FAILED");
+  //    });
+
+  // });
+});
