@@ -27,6 +27,7 @@ contract ReservationEvent is ReentrancyGuard, Ownable {
     IRena rena;
 
     bool public liquidityGenerated;
+    bool public beenInitalized;
 
     uint256 [5] public reservations;
     uint256 [5] public ethReceived;
@@ -40,15 +41,19 @@ contract ReservationEvent is ReentrancyGuard, Ownable {
     uint256 public roundDurations;
     uint256 public endTime;
 
+    constructor() {}
+
     //Deploy with the start time, and the length of rounds, and the amount of Rena for each round. 
     //Setup for five rounds.
-    constructor(
+    function initialize(
         address rena_, 
         uint256 startTime_,
         uint256 roundDurations_,
         uint256[5] memory reservations_,
         address payable[5] memory crew_
-        ) {
+        ) external onlyOwner {
+        require(beenInitalized == false, "Already Initialized");
+        beenInitalized = true;
         rena = IRena(rena_);
         startTime = startTime_;
         roundDurations = roundDurations_;
