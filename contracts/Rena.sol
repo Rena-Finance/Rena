@@ -102,6 +102,11 @@ contract Rena is ERC20("Rena", "RENA"), Ownable, ReentrancyGuard {
         require(callerRewardDivisor_ >= 10, "Must not be greater than 10% total");
         callerRewardDivisor = callerRewardDivisor_;
     }
+    
+    function changeMinRebalancerAmount(uint256 minimumRebalanceAmount_) external onlyOwner {
+        require(minimumRebalanceAmount_ >= 1, "Must be greater than 1");
+        minimumRebalanceAmount = minimumRebalanceAmount_;
+    }
 
     function changeRebalalncerDivisor(uint16 rebalancerDivisor_) external onlyOwner {
         require(rebalancerDivisor_ >= 10, "Must not be greater than 10% total");
